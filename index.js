@@ -372,9 +372,32 @@ app.delete("/mcp", async (req, res) => {
   await transport.handleRequest(req, res);
 });
 
-app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "3.1.0", endpoints: ["/mcp", "/chat", "/dashboard", "/health"] }));
+app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "3.2.0", endpoints: ["/mcp", "/chat", "/dashboard", "/health"] }));
 
-app.get("/dashboard", (_req, res) => {
+app.get("/test", async (_req, res) => {
+  if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: "ANTHROPIC_API_KEY not set" });
+  try {
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "mcp-client-2025-04-04",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 100,
+        messages: [{ role: "user", content: "Reply with: {\"ok\":true}" }],
+      }),
+    });
+    const data = await upstream.json();
+    res.status(upstream.status).json({ anthropic_status: upstream.status, response: data });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
   res.sendFile(new URL("./dashboard.html", import.meta.url).pathname);
 });
 
