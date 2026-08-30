@@ -326,10 +326,11 @@ app.post("/chat", async (req, res) => {
       max_tokens: 1000,
       ...req.body,
       mcp_servers: [
-        { type: "url", url: `https://financial-mcp-production-5dcd.up.railway.app/mcp`, name: "financial-data" },
+        { type: "url", url: "https://financial-mcp-9mgo.onrender.com/mcp", name: "financial-data" },
         { type: "url", url: "https://kfinance.kensho.com/integrations/mcp", name: "spglobal" },
       ],
     };
+    console.log("[/chat] sending to Anthropic, model:", payload.model, "messages:", payload.messages?.length);
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -341,6 +342,7 @@ app.post("/chat", async (req, res) => {
       body: JSON.stringify(payload),
     });
     const data = await upstream.json();
+    if (!upstream.ok) console.error("[/chat] Anthropic error:", upstream.status, JSON.stringify(data));
     res.status(upstream.status).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -370,7 +372,7 @@ app.delete("/mcp", async (req, res) => {
   await transport.handleRequest(req, res);
 });
 
-app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "3.0.0", endpoints: ["/mcp", "/chat", "/dashboard", "/health"] }));
+app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "3.1.0", endpoints: ["/mcp", "/chat", "/dashboard", "/health"] }));
 
 app.get("/dashboard", (_req, res) => {
   res.sendFile(new URL("./dashboard.html", import.meta.url).pathname);
