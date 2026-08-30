@@ -154,10 +154,6 @@ app.post("/chat", async (req, res) => {
       model: "claude-haiku-4-5-20251001",
       max_tokens: 1000,
       ...req.body,
-      mcp_servers: [
-        { type: "url", url: "https://financial-mcp-9mgo.onrender.com/mcp", name: "financial-data" },
-        { type: "url", url: "https://kfinance.kensho.com/integrations/mcp", name: "spglobal" },
-      ],
     };
     console.log("[/chat] model:", payload.model, "msgs:", payload.messages?.length);
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -166,7 +162,6 @@ app.post("/chat", async (req, res) => {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "mcp-client-2025-04-04",
       },
       body: JSON.stringify(payload),
     });
@@ -223,7 +218,7 @@ app.delete("/mcp", async (req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", server: "financial-mcp", version: "3.2.0", endpoints: ["/mcp", "/chat", "/dashboard", "/test", "/health"] });
+  res.json({ status: "ok", server: "financial-mcp", version: "3.3.0", endpoints: ["/mcp", "/chat", "/dashboard", "/test", "/health"] });
 });
 
 const PORT = process.env.PORT || 3000;
