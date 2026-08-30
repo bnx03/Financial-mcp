@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valuation Desk</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#e8e6df;min-height:100vh;padding:0}
+.topbar{background:#161616;border-bottom:1px solid #2a2a2a;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:600;letter-spacing:-.3px}
+.logo span{color:#378ADD}
+.search-row{display:flex;gap:8px}
+.search-row input{background:#222;border:1px solid #333;color:#e8e6df;padding:8px 14px;border-radius:8px;font-size:14px;width:220px;outline:none}
+.search-row input:focus{border-color:#378ADD}
+.search-row button{background:#378ADD;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:500}
+.search-row button:hover{background:#2a6fb5}
+.main{max-width:900px;margin:0 auto;padding:28px 24px}
+.section-label{font-size:11px;letter-spacing:.06em;color:#666;text-transform:uppercase;margin-bottom:10px;margin-top:28px}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:4px}
+.metric-card{background:#1a1a1a;border-radius:10px;padding:14px 16px;border:1px solid #242424}
+.metric-label{font-size:12px;color:#888;margin-bottom:4px}
+.metric-value{font-size:20px;font-weight:600;color:#e8e6df}
+.metric-sub{font-size:11px;color:#555;margin-top:3px}
+.verdict{display:flex;align-items:center;gap:12px;border-radius:10px;padding:14px 18px;margin-bottom:4px;border:1px solid #2a2a2a}
+.verdict-text{font-size:15px;font-weight:600}
+.verdict-sub{font-size:12px;color:#888;margin-top:2px}
+.pillar{background:#161616;border:1px solid #2a2a2a;border-radius:12px;padding:18px;margin-bottom:12px}
+.pillar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.pillar-title{font-size:14px;font-weight:600;color:#e8e6df}
+.badge{font-size:12px;font-weight:600;border-radius:20px;padding:3px 12px}
+.badge-cheap{background:rgba(29,158,117,.15);color:#1D9E75}
+.badge-fair{background:rgba(239,159,39,.15);color:#EF9F27}
+.badge-exp{background:rgba(226,75,74,.15);color:#E24B4A}
+.bar-track{height:6px;background:#222;border-radius:3px;margin:10px 0 5px}
+.bar-fill{height:6px;border-radius:3px;transition:width .6s ease}
+.bar-labels{display:flex;justify-content:space-between;font-size:11px;color:#555}
+.pillar-desc{font-size:12px;color:#888;margin-top:10px;line-height:1.6}
+.yield-row{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.yield-card{flex:1;min-width:100px;background:#1a1a1a;border-radius:8px;padding:12px;border:1px solid #242424}
+.yield-label{font-size:11px;color:#666;margin-bottom:4px}
+.yield-val{font-size:22px;font-weight:600}
+.range-wrap{margin-top:10px}
+.range-label{font-size:12px;color:#888;margin-bottom:8px}
+.range-track{position:relative;height:8px;background:#222;border-radius:4px;margin-bottom:8px}
+.range-fill{height:8px;background:#378ADD;border-radius:4px}
+.range-cursor{position:absolute;top:-5px;width:2px;height:18px;background:#e8e6df;border-radius:1px}
+.range-ends{display:flex;justify-content:space-between;font-size:11px;color:#666}
+.range-now{font-size:11px;color:#e8e6df;font-weight:600;text-align:center;margin-top:4px}
+.ai-wrap{background:#161616;border:1px solid #2a2a2a;border-radius:12px;padding:18px;margin-bottom:12px}
+.ai-top{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.ai-ring{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid;flex-shrink:0}
+.ai-ring-val{font-size:18px;font-weight:700}
+.ai-title{font-size:15px;font-weight:600}
+.ai-sub{font-size:12px;color:#888;margin-top:3px}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.ai-card{background:#1a1a1a;border-radius:8px;padding:10px 12px;border:1px solid #242424}
+.ai-card-label{font-size:11px;color:#666;margin-bottom:3px}
+.ai-card-val{font-size:15px;font-weight:600}
+.ai-card-desc{font-size:11px;color:#666;margin-top:3px;line-height:1.4}
+.ai-quote{font-size:12px;color:#888;font-style:italic;border-left:2px solid #378ADD;padding-left:10px;margin:12px 0;line-height:1.6}
+.signal-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #222}
+.signal-row:last-child{border-bottom:none}
+.signal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.signal-type{font-size:11px;color:#666;text-transform:capitalize}
+.signal-text{font-size:13px;color:#ccc;margin-top:3px;line-height:1.4}
+.risk-box{background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.2);border-radius:8px;padding:12px;margin-top:12px}
+.risk-title{font-size:12px;font-weight:600;color:#E24B4A;margin-bottom:6px}
+.risk-item{font-size:12px;color:#E24B4A;display:flex;gap:6px;padding:3px 0;line-height:1.4}
+.prod-chip{font-size:11px;padding:3px 10px;border-radius:12px;background:rgba(83,74,183,.2);color:#AFA9EC;margin:2px;display:inline-block}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tab{font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid #333;background:transparent;cursor:pointer;color:#888}
+.tab.active{background:rgba(55,138,221,.15);color:#378ADD;border-color:#378ADD}
+.stmt-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.stmt-table th{text-align:left;padding:8px 10px;color:#666;font-weight:400;border-bottom:1px solid #222}
+.stmt-table th:not(:first-child){text-align:right}
+.stmt-table td{padding:8px 10px;border-bottom:1px solid #1e1e1e;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stmt-table td:not(:first-child){text-align:right}
+.stmt-table tr:hover td{background:#1a1a1a}
+.row-bold{font-weight:600;color:#e8e6df!important}
+.pos{color:#1D9E75!important}
+.neg{color:#E24B4A!important}
+.chart-wrap{height:200px;position:relative;margin-top:10px}
+.progress-box{background:#161616;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:12px}
+.prog-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.prog-sub{font-size:12px;color:#666;margin-bottom:12px}
+.prog-track{height:4px;background:#222;border-radius:2px;margin-bottom:12px;overflow:hidden}
+.prog-fill{height:4px;background:#378ADD;border-radius:2px;transition:width .5s ease}
+.prog-step{font-size:12px;display:flex;align-items:center;gap:8px;padding:4px 0;color:#666}
+.prog-step.active{color:#378ADD}
+.prog-step.done{color:#1D9E75}
+.spinner{width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.3);border-radius:10px;padding:14px 18px;color:#E24B4A;font-size:13px}
+.cached-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.cached-chip{font-size:11px;padding:3px 10px;border-radius:12px;background:#1a1a1a;color:#888;border:1px solid #2a2a2a;cursor:pointer}
+.cached-chip:hover{background:#222;color:#e8e6df}
+.from-cache{font-size:11px;padding:3px 10px;border-radius:12px;background:rgba(29,158,117,.15);color:#1D9E75;display:inline-flex;align-items:center;gap:5px}
+.refresh-btn{font-size:11px;background:transparent;border:1px solid #333;color:#888;padding:3px 10px;border-radius:12px;cursor:pointer}
+.refresh-btn:hover{color:#e8e6df;border-color:#555}
+.company-header{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.ticker-pill{font-size:13px;padding:3px 12px;border-radius:20px;background:rgba(55,138,221,.15);color:#378ADD;font-weight:600}
+.company-name{font-size:24px;font-weight:700}
+.sector-label{font-size:13px;color:#666}
+.empty{text-align:center;padding:60px 20px;color:#555}
+.empty-title{font-size:18px;font-weight:600;margin-bottom:8px;color:#888}
+.empty-sub{font-size:13px;line-height:1.6}
+footer{text-align:center;padding:24px;font-size:11px;color:#444;border-top:1px solid #1e1e1e;margin-top:40px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Valuation <span>Desk</span></div>
+  <div class="search-row">
+    <input type="text" id="tickerInput" placeholder="AAPL, BKNG, NVDA..." />
+    <button onclick="analyze()">Analyze</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="cachedBar"></div>
+  <div id="result">
+    <div class="empty">
+      <div class="empty-title">Enter a ticker to get started</div>
+      <div class="empty-sub">Get full valuation analysis using the Bravos Research framework —<br>PE analysis, yield spread, technical positioning, AI adoption, and financial statements.</div>
+    </div>
+  </div>
+</div>
+
+<footer>Valuation Desk · Powered by FRED, Polygon.io &amp; S&amp;P Global · Data for informational purposes only</footer>
+
+<script>
+const API = '/chat';
+const CACHE_TTL = 60 * 60 * 1000;
+const cache = {};
+
+document.getElementById('tickerInput').addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
+
+function getCached(t) {
+  const e = cache[t];
+  if (e && (Date.now() - e.ts) < CACHE_TTL) return e.data;
+  const stored = localStorage.getItem('vd_' + t);
+  if (stored) {
+    const p = JSON.parse(stored);
+    if ((Date.now() - p.ts) < CACHE_TTL) { cache[t] = p; return p.data; }
+  }
+  return null;
+}
+function setCached(t, data) {
+  const e = { data, ts: Date.now() };
+  cache[t] = e;
+  try { localStorage.setItem('vd_' + t, JSON.stringify(e)); } catch(err) {}
+  renderCacheBar();
+}
+function clearTicker(t) {
+  delete cache[t];
+  try { localStorage.removeItem('vd_' + t); } catch(err) {}
+  renderCacheBar();
+}
+function renderCacheBar() {
+  const tickers = Object.keys(cache).filter(t => (Date.now() - cache[t].ts) < CACHE_TTL);
+  const bar = document.getElementById('cachedBar');
+  if (!tickers.length) { bar.innerHTML = ''; return; }
+  bar.innerHTML = `<div class="cached-bar"><span style="font-size:11px;color:#555">Cached:</span>${tickers.map(t => `<span class="cached-chip" onclick="loadCached('${t}')">${t}</span>`).join('')}<span style="font-size:11px;color:#444;cursor:pointer;text-decoration:underline;margin-left:4px" onclick="clearAll()">clear all</span></div>`;
+}
+function loadCached(t) {
+  document.getElementById('tickerInput').value = t;
+  const c = getCached(t);
+  if (c) render(c.fin, c.ai, true);
+  else analyze(t);
+}
+function clearAll() {
+  Object.keys(cache).forEach(t => { delete cache[t]; try { localStorage.removeItem('vd_' + t); } catch(e) {} });
+  renderCacheBar();
+}
+
+function fmt(n, d=2) { if (n === null || n === undefined || isNaN(n)) return '—'; return Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtB(n) { if (!n) return '—'; return n >= 1e9 ? '$' + (n/1e9).toFixed(1) + 'B' : '$' + (n/1e6).toFixed(0) + 'M'; }
+function fmtPct(n) { return (n !== null && n !== undefined && !isNaN(n)) ? fmt(n) + '%' : '—'; }
+
+function setProgress(step, pct) {
+  const bar = document.getElementById('prog-fill');
+  if (bar) bar.style.width = pct + '%';
+  ['ps1','ps2','ps3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'prog-step ' + (i < step ? 'done' : i === step ? 'active' : '');
+    const ico = el.querySelector('.pico');
+    if (!ico) return;
+    ico.innerHTML = i < step ? '✓' : i === step ? '<div class="spinner"></div>' : '○';
+  });
+}
+
+function showProgress(ticker) {
+  document.getElementById('result').innerHTML = `
+    <div class="progress-box">
+      <div class="prog-title">Analyzing ${ticker}...</div>
+      <div class="prog-sub">Haiku model · FRED + Polygon + S&P Global · ~8–12 sec</div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:5%"></div></div>
+      <div id="ps1" class="prog-step active"><span class="pico"><div class="spinner"></div></span> Fetching financials</div>
+      <div id="ps2" class="prog-step"><span class="pico">○</span> Analyzing AI signals from filings</div>
+      <div id="ps3" class="prog-step"><span class="pico">○</span> Rendering dashboard</div>
+    </div>`;
+  setProgress(0, 5);
+}
+
+async function callServer(system, prompt) {
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system, messages: [{ role: 'user', content: prompt }] })
+  });
+  if (!res.ok) throw new Error(`Server error ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  const text = data.content?.filter(b => b.type === 'text').map(b => b.text).join('');
+  if (!text) throw new Error('Empty response');
+  return JSON.parse(text.replace(/```json|```/g, '').trim());
+}
+
+async function analyze(forceTicker) {
+  const ticker = (forceTicker || document.getElementById('tickerInput').value || '').trim().toUpperCase();
+  if (!ticker) return;
+  document.getElementById('tickerInput').value = ticker;
+
+  const cached = getCached(ticker);
+  if (cached) { render(cached.fin, cached.ai, true); return; }
+
+  showProgress(ticker);
+
+  try {
+    const finP = callServer(
+      'You are a financial analyst. Return ONLY valid JSON, no markdown.',
+      `For stock ${ticker} return ONLY JSON:
+{"companyName":string,"ticker":string,"sector":string,"currentPrice":number,"marketCap":number,"peRatio":number,"forwardPE":number,"sectorAvgPE":number,"shillerPE":37.5,"earningsYield":number,"cashYield":4.3,"revenueGrowthYoY":number,"netMargin":number,"grossMargin":number,"roe":number,"debtToEquity":number,"dividendYield":number,"fiftyTwoWeekHigh":number,"fiftyTwoWeekLow":number,"priceVsHigh":number,"annualRevenue":[{"year":number,"revenue":number,"netIncome":number,"grossProfit":number,"operatingIncome":number}],"balanceSheet":{"totalAssets":number,"totalDebt":number,"cashAndEquivalents":number,"shareholdersEquity":number}}
+shillerPE=37.5, cashYield=4.3. Use real MCP data.`
+    );
+
+    setProgress(0, 35);
+
+    const aiP = callServer(
+      'You are an AI adoption analyst. Return ONLY valid JSON, no markdown.',
+      `Analyze AI adoption for ${ticker} from recent filings via MCP. Return ONLY JSON:
+{"adoptionScore":number,"adoptionLabel":"Leader"|"Adopter"|"Early stage"|"No signal","aiRevenue":number|null,"aiRevenueGrowth":number|null,"aiCapex":number|null,"aiMarginImpact":"positive"|"neutral"|"negative"|"mixed","aiMarginDetail":string,"signals":[{"type":"revenue"|"cost"|"strategy"|"product"|"risk","sentiment":"positive"|"neutral"|"negative","text":string}],"keyQuote":string,"aiProducts":[string],"riskFlags":[string]}`
+    );
+
+    setProgress(1, 65);
+
+    const [fin, ai] = await Promise.all([finP, aiP]);
+    setProgress(2, 92);
+
+    setCached(ticker, { fin, ai });
+    window._fin = fin; window._ai = ai;
+    setTimeout(() => render(fin, ai, false), 80);
+
+  } catch(e) {
+    document.getElementById('result').innerHTML = `<div class="error-box">Could not load data for ${ticker}.<br><small style="opacity:.7">${e.message}</small></div>`;
+  }
+}
+
+function scoreLabel(s) { return s >= 66 ? ['Cheap','cheap'] : s >= 33 ? ['Fair value','fair'] : ['Expensive','exp']; }
+function badgeClass(c) { return 'badge badge-' + c; }
+
+function render(d, ai, fromCache) {
+  const pePct = Math.min(100, Math.max(0, 100 - ((d.peRatio - 10) / (Math.max(d.sectorAvgPE, 25) * 1.5 - 10)) * 100));
+  const spreadGood = d.earningsYield > d.cashYield;
+  const spreadScore = spreadGood ? Math.min(100, 50 + (d.earningsYield - d.cashYield) * 10) : Math.max(0, 50 - (d.cashYield - d.earningsYield) * 10);
+  const techScore = d.priceVsHigh < -20 ? 75 : d.priceVsHigh < -10 ? 55 : d.priceVsHigh < -5 ? 40 : 25;
+  const overall = Math.round((pePct + spreadScore + techScore) / 3);
+  const [ov, ovc] = scoreLabel(overall);
+  const [, p1c] = scoreLabel(pePct);
+  const [, p2c] = scoreLabel(spreadScore);
+  const [, p3c] = scoreLabel(techScore);
+
+  const vColors = { cheap: { bg: 'rgba(29,158,117,.08)', border: 'rgba(29,158,117,.3)', icon: '↑', col: '#1D9E75' }, fair: { bg: 'rgba(239,159,39,.08)', border: 'rgba(239,159,39,.3)', icon: '→', col: '#EF9F27' }, exp: { bg: 'rgba(226,75,74,.08)', border: 'rgba(226,75,74,.3)', icon: '↓', col: '#E24B4A' } };
+  const vc = vColors[ovc];
+  const barColor = c => c === 'cheap' ? '#1D9E75' : c === 'fair' ? '#EF9F27' : '#E24B4A';
+
+  const aiScore = ai?.adoptionScore ?? 0;
+  const aiColor = aiScore >= 70 ? '#1D9E75' : aiScore >= 40 ? '#EF9F27' : '#555';
+  const aiBorder = aiScore >= 70 ? '#1D9E75' : aiScore >= 40 ? '#EF9F27' : '#333';
+  const aiBadge = aiScore >= 70 ? 'badge-cheap' : aiScore >= 40 ? 'badge-fair' : 'badge-exp';
+  const marginColor = { positive: '#1D9E75', negative: '#E24B4A', neutral: '#888', mixed: '#EF9F27' }[ai?.aiMarginImpact] || '#888';
+  const dotColor = s => s === 'positive' ? '#1D9E75' : s === 'negative' ? '#E24B4A' : '#555';
+
+  const signals = (ai?.signals || []).map(s => `
+    <div class="signal-row">
+      <div class="signal-dot" style="background:${dotColor(s.sentiment)}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="signal-type">${s.type} · ${s.sentiment}</div>
+        <div class="signal-text">${s.text}</div>
+      </div>
+    </div>`).join('');
+
+  const prods = (ai?.aiProducts || []).map(p => `<span class="prod-chip">${p}</span>`).join('');
+  const risks = (ai?.riskFlags || []).map(r => `<div class="risk-item">▲ ${r}</div>`).join('');
+
+  const rng = (() => {
+    const r = d.fiftyTwoWeekHigh - d.fiftyTwoWeekLow;
+    const p = r > 0 ? Math.max(2, Math.min(97, ((d.currentPrice - d.fiftyTwoWeekLow) / r) * 100)) : 50;
+    return `<div class="range-fill" style="width:${p}%"></div><div class="range-cursor" style="left:${p}%"></div>`;
+  })();
+
+  document.getElementById('result').innerHTML = `
+    ${fromCache ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><span class="from-cache">⚡ Cached</span><button class="refresh-btn" onclick="refreshTicker('${d.ticker}')">Refresh data</button></div>` : ''}
+
+    <div class="company-header">
+      <span class="ticker-pill">${d.ticker}</span>
+      <span class="company-name">${d.companyName}</span>
+      <span class="sector-label">${d.sector || ''}</span>
+    </div>
+
+    <div class="verdict" style="background:${vc.bg};border-color:${vc.border}">
+      <span style="font-size:24px;color:${vc.col}">${vc.icon}</span>
+      <div>
+        <div class="verdict-text" style="color:${vc.col}">${ov} — composite score ${overall}/100</div>
+        <div class="verdict-sub">Valuation · yield spread · technical positioning</div>
+      </div>
+    </div>
+
+    <div class="section-label">Key metrics</div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Price</div><div class="metric-value">$${fmt(d.currentPrice)}</div><div class="metric-sub">${fmtB(d.marketCap)} mkt cap</div></div>
+      <div class="metric-card"><div class="metric-label">PE ratio (TTM)</div><div class="metric-value">${fmt(d.peRatio, 1)}x</div><div class="metric-sub">Sector avg ${fmt(d.sectorAvgPE, 1)}x</div></div>
+      <div class="metric-card"><div class="metric-label">Forward PE</div><div class="metric-value">${fmt(d.forwardPE, 1)}x</div><div class="metric-sub">Earnings yield ${fmtPct(d.earningsYield)}</div></div>
+      <div class="metric-card"><div class="metric-label">Net margin</div><div class="metric-value">${fmtPct(d.netMargin)}</div><div class="metric-sub">Gross ${fmtPct(d.grossMargin)}</div></div>
+      <div class="metric-card"><div class="metric-label">Revenue growth</div><div class="metric-value">${fmtPct(d.revenueGrowthYoY)}</div><div class="metric-sub">YoY</div></div>
+      <div class="metric-card"><div class="metric-label">Return on equity</div><div class="metric-value">${fmtPct(d.roe)}</div><div class="metric-sub">D/E ${fmt(d.debtToEquity, 2)}</div></div>
+    </div>
+
+    <div class="section-label">Bravos research framework</div>
+
+    <div class="pillar">
+      <div class="pillar-header"><span class="pillar-title">Pillar 1 — Valuation (PE analysis)</span><span class="${badgeClass(p1c)}">${scoreLabel(pePct)[0]}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pePct}%;background:${barColor(p1c)}"></div></div>
+      <div class="bar-labels"><span>Cheap</span><span>Expensive</span></div>
+      <div class="pillar-desc">PE of <strong>${fmt(d.peRatio,1)}x</strong> vs sector avg <strong>${fmt(d.sectorAvgPE,1)}x</strong> and Shiller CAPE <strong>${fmt(d.shillerPE,1)}x</strong>. ${d.peRatio < d.sectorAvgPE ? 'Trading below sector average — a positive valuation signal.' : 'Trading above sector average — requires strong growth justification.'}</div>
+    </div>
+
+    <div class="pillar">
+      <div class="pillar-header"><span class="pillar-title">Pillar 2 — Earnings yield vs cash yield</span><span class="${badgeClass(p2c)}">${scoreLabel(spreadScore)[0]}</span></div>
+      <div class="yield-row">
+        <div class="yield-card"><div class="yield-label">Earnings yield</div><div class="yield-val" style="color:${spreadGood ? '#1D9E75' : '#E24B4A'}">${fmtPct(d.earningsYield)}</div></div>
+        <div style="display:flex;align-items:center;font-size:22px;color:#555">${spreadGood ? '>' : '<'}</div>
+        <div class="yield-card"><div class="yield-label">Cash yield (risk-free)</div><div class="yield-val">${fmtPct(d.cashYield)}</div></div>
+      </div>
+      <div class="pillar-desc">${spreadGood ? `Earnings yield ${fmtPct(d.earningsYield)} beats cash yield ${fmtPct(d.cashYield)} by ${fmt(d.earningsYield - d.cashYield, 2)}pp — stocks offer a premium over cash.` : `Cash yield ${fmtPct(d.cashYield)} exceeds earnings yield — T-bills pay more. Bravos flags this as a major peak warning signal.`}</div>
+    </div>
+
+    <div class="pillar">
+      <div class="pillar-header"><span class="pillar-title">Pillar 3 — Technical positioning</span><span class="${badgeClass(p3c)}">${scoreLabel(techScore)[0]}</span></div>
+      <div class="range-wrap">
+        <div class="range-label">52-week range</div>
+        <div class="range-track">${rng}</div>
+        <div class="range-ends"><span>Low $${fmt(d.fiftyTwoWeekLow)}</span><span>High $${fmt(d.fiftyTwoWeekHigh)}</span></div>
+        <div class="range-now">Current $${fmt(d.currentPrice)} · ${Math.abs(d.priceVsHigh).toFixed(1)}% ${d.priceVsHigh < 0 ? 'below' : 'above'} 52-week high</div>
+      </div>
+      <div class="pillar-desc">${d.priceVsHigh < -20 ? 'Deep pullback — Bravos looks for macro confirmation before entering.' : d.priceVsHigh < -10 ? 'Moderate pullback — potentially attractive entry zone.' : 'Near highs — momentum favors bulls but limits margin of safety.'} Dividend yield: ${d.dividendYield > 0 ? fmtPct(d.dividendYield) : 'none'}.</div>
+    </div>
+
+    <div class="section-label">AI adoption analysis</div>
+    <div class="ai-wrap" style="border-color:${aiBorder}">
+      <div class="ai-top">
+        <div class="ai-ring" style="border-color:${aiBorder}"><span class="ai-ring-val" style="color:${aiColor}">${aiScore}</span></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="ai-title">AI adoption</span><span class="${badgeClass(aiBadge)}">${ai?.adoptionLabel || '—'}</span></div>
+          <div class="ai-sub">Score out of 100 · based on financial statements and filings</div>
+        </div>
+      </div>
+      <div class="ai-grid">
+        <div class="ai-card"><div class="ai-card-label">AI revenue</div><div class="ai-card-val" style="color:${ai?.aiRevenue ? '#1D9E75' : '#555'}">${ai?.aiRevenue ? '$' + ai.aiRevenue.toFixed(1) + 'B' : 'Not disclosed'}</div><div class="ai-card-desc">${ai?.aiRevenueGrowth ? 'Growing ' + ai.aiRevenueGrowth.toFixed(0) + '% YoY' : 'Not separately reported'}</div></div>
+        <div class="ai-card"><div class="ai-card-label">AI capex</div><div class="ai-card-val" style="color:#378ADD">${ai?.aiCapex ? '$' + ai.aiCapex.toFixed(1) + 'B' : '—'}</div><div class="ai-card-desc">Investment in AI infrastructure</div></div>
+        <div class="ai-card"><div class="ai-card-label">Margin impact</div><div class="ai-card-val" style="color:${marginColor};text-transform:capitalize">${ai?.aiMarginImpact || '—'}</div><div class="ai-card-desc">${ai?.aiMarginDetail || 'No data in filings'}</div></div>
+        <div class="ai-card"><div class="ai-card-label">AI products</div><div class="ai-card-val">${(ai?.aiProducts || []).length || 0}</div><div class="ai-card-desc">${(ai?.aiProducts || []).length ? 'Active offerings identified' : 'No distinct AI products found'}</div></div>
+      </div>
+      ${ai?.keyQuote ? `<div class="ai-quote">"${ai.keyQuote}"<span style="font-size:11px;color:#555;margin-left:8px">— recent filing</span></div>` : ''}
+      ${signals ? `<div style="margin-top:12px"><div style="font-size:12px;font-weight:600;color:#888;margin-bottom:6px">Signals from filings</div>${signals}</div>` : ''}
+      ${prods ? `<div style="margin-top:14px"><div style="font-size:12px;font-weight:600;color:#888;margin-bottom:6px">AI products and services</div>${prods}</div>` : ''}
+      ${risks ? `<div class="risk-box"><div class="risk-title">▲ AI risk flags from filings</div>${risks}</div>` : ''}
+    </div>
+
+    <div class="section-label">Financial statements</div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('income',this)">Income statement</button>
+      <button class="tab" onclick="switchTab('balance',this)">Balance sheet</button>
+      <button class="tab" onclick="switchTab('chart',this)">Revenue chart</button>
+    </div>
+    <div id="stmtContent"></div>
+  `;
+
+  switchTab('income', document.querySelector('.tab.active'));
+}
+
+function refreshTicker(t) {
+  clearTicker(t);
+  analyze(t);
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const d = window._fin, el = document.getElementById('stmtContent');
+  if (!el || !d) return;
+
+  if (tab === 'income') {
+    const rows = (d.annualRevenue || []).slice().reverse();
+    el.innerHTML = `<table class="stmt-table"><thead><tr><th style="width:38%">Metric</th>${rows.map(r => `<th>${r.year}</th>`).join('')}</tr></thead><tbody>
+      <tr><td class="row-bold">Revenue</td>${rows.map(r => `<td>$${r.revenue?.toFixed(1)}B</td>`).join('')}</tr>
+      <tr><td class="row-bold">Gross profit</td>${rows.map(r => `<td>${r.grossProfit ? '$' + r.grossProfit.toFixed(1) + 'B' : '—'}</td>`).join('')}</tr>
+      <tr><td class="row-bold">Operating income</td>${rows.map(r => `<td>${r.operatingIncome ? '$' + r.operatingIncome.toFixed(1) + 'B' : '—'}</td>`).join('')}</tr>
+      <tr><td class="row-bold">Net income</td>${rows.map(r => `<td class="${r.netIncome > 0 ? 'pos' : 'neg'}">$${r.netIncome?.toFixed(1)}B</td>`).join('')}</tr>
+    </tbody></table>`;
+  } else if (tab === 'balance') {
+    const bs = d.balanceSheet || {};
+    const net = ((bs.cashAndEquivalents || 0) - (bs.totalDebt || 0));
+    el.innerHTML = `<table class="stmt-table"><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>
+      <tr><td class="row-bold">Total assets</td><td>${bs.totalAssets ? '$' + bs.totalAssets.toFixed(1) + 'B' : '—'}</td></tr>
+      <tr><td class="row-bold">Total debt</td><td>${bs.totalDebt ? '$' + bs.totalDebt.toFixed(1) + 'B' : '—'}</td></tr>
+      <tr><td class="row-bold">Cash and equivalents</td><td class="pos">${bs.cashAndEquivalents ? '$' + bs.cashAndEquivalents.toFixed(1) + 'B' : '—'}</td></tr>
+      <tr><td class="row-bold">Shareholders equity</td><td>${bs.shareholdersEquity ? '$' + bs.shareholdersEquity.toFixed(1) + 'B' : '—'}</td></tr>
+      <tr><td class="row-bold">Net cash position</td><td class="${net > 0 ? 'pos' : 'neg'}">$${net.toFixed(1)}B</td></tr>
+    </tbody></table>`;
+  } else {
+    el.innerHTML = '<div class="chart-wrap"><canvas id="revChart"></canvas></div>';
+    setTimeout(() => {
+      const ctx = document.getElementById('revChart');
+      if (!ctx) return;
+      if (window._revChart) window._revChart.destroy();
+      const rows = d.annualRevenue || [];
+      window._revChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: rows.map(r => r.year),
+          datasets: [
+            { label: 'Revenue', data: rows.map(r => r.revenue), backgroundColor: '#378ADD', borderRadius: 4 },
+            { label: 'Net income', data: rows.map(r => r.netIncome), backgroundColor: '#1D9E75', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#888', font: { size: 11 }, boxWidth: 12 } } },
+          scales: {
+            x: { ticks: { color: '#666', font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { color: '#666', font: { size: 11 }, callback: v => '$' + v + 'B' }, grid: { color: '#1e1e1e' } }
+          }
+        }
+      });
+    }, 50);
+  }
+}
+
+renderCacheBar();
+</script>
+</body>
+</html>

@@ -370,7 +370,12 @@ app.delete("/mcp", async (req, res) => {
   await transport.handleRequest(req, res);
 });
 
-app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "2.0.0", endpoints: ["/mcp", "/chat", "/health"] }));
+app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "3.0.0", endpoints: ["/mcp", "/chat", "/dashboard", "/health"] }));
+
+app.get("/dashboard", (_req, res) => {
+  res.sendFile(new URL("./dashboard.html", import.meta.url).pathname);
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Financial MCP server running on port ${PORT}`));
