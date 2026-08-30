@@ -218,7 +218,7 @@ app.delete("/mcp", async (req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", server: "financial-mcp", version: "3.3.0", endpoints: ["/mcp", "/chat", "/dashboard", "/test", "/health"] });
+  res.json({ status: "ok", server: "financial-mcp", version: "3.3.1", endpoints: ["/mcp", "/chat", "/dashboard", "/test", "/health"] });
 });
 
 const PORT = process.env.PORT || 3000;
