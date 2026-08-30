@@ -302,6 +302,51 @@ server.tool(
   }
 );
 
+// ── CORS ─────────────────────────────────────────────────────────────────────
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
+// ── Anthropic proxy ───────────────────────────────────────────────────────────
+
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+app.post("/chat", async (req, res) => {
+  if (!ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured on server." });
+  }
+  try {
+    const payload = {
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1000,
+      ...req.body,
+      mcp_servers: [
+        { type: "url", url: `https://financial-mcp-production-5dcd.up.railway.app/mcp`, name: "financial-data" },
+        { type: "url", url: "https://kfinance.kensho.com/integrations/mcp", name: "spglobal" },
+      ],
+    };
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "mcp-client-2025-04-04",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── HTTP Transport ────────────────────────────────────────────────────────────
 
 app.post("/mcp", async (req, res) => {
@@ -325,7 +370,7 @@ app.delete("/mcp", async (req, res) => {
   await transport.handleRequest(req, res);
 });
 
-app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "1.0.0" }));
+app.get("/health", (_req, res) => res.json({ status: "ok", server: "financial-mcp", version: "2.0.0", endpoints: ["/mcp", "/chat", "/health"] }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Financial MCP server running on port ${PORT}`));
