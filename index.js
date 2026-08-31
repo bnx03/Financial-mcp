@@ -192,7 +192,24 @@ app.get("/test", async (_req, res) => {
   }
 });
 
-app.get("/dashboard", (_req, res) => {
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "Fin-McP@2026";
+
+function requireAuth(req, res, next) {
+  const auth = req.headers['authorization'];
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Valuation Desk"');
+    return res.status(401).send('Authentication required');
+  }
+  const decoded = Buffer.from(auth.slice(6), 'base64').toString();
+  const password = decoded.split(':').slice(1).join(':');
+  if (password !== DASHBOARD_PASSWORD) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Valuation Desk"');
+    return res.status(401).send('Invalid password');
+  }
+  next();
+}
+
+app.get("/dashboard", requireAuth, (_req, res) => {
   res.sendFile(join(__dirname, "dashboard.html"));
 });
 
@@ -218,7 +235,7 @@ app.delete("/mcp", async (req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", server: "financial-mcp", version: "3.3.1", endpoints: ["/mcp", "/chat", "/dashboard", "/test", "/health"] });
+  res.json({ status: "ok", server: "financial-mcp", version: "3.4.0", endpoints: ["/mcp", "/chat", "/dashboard", "/test", "/health"] });
 });
 
 const PORT = process.env.PORT || 3000;
